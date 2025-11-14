@@ -1,0 +1,32 @@
+name: Windows Full — RDP + VNC + Tailscale + Wallpaper
+
+on:
+  workflow_dispatch:
+
+jobs:
+  win:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    env:
+      TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+      WALLPAPER_URL: "https://i.ibb.co/d0Ss03nR/file-00000000b4f072099b58ccb167f14c24-1.jpg"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+
+      - name: Start system setup
+        run: |
+          ./start.ps1
+
+      - name: Login Info
+        run: |
+          ./login.ps1
+
+      - name: Keep session alive
+        run: Start-Sleep -Seconds 21600
