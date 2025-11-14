@@ -1,0 +1,42 @@
+name: Windows RDP via Tailscale
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360   # 6 hours max
+
+    env:
+      TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+      RDP_USER: Sapna
+      RDP_PASS: "Sapna@12345Love!"   # strong password (no InvalidPasswordException)
+      # optional – your wallpaper image URL:
+      WALLPAPER_URL: ""              # e.g. https://example.com/wall.jpg
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Allow PowerShell scripts
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+
+      - name: Run start.ps1 (Tailscale + RDP + wallpaper)
+        shell: pwsh
+        run: |
+          ./start.ps1
+
+      - name: Show connection info
+        shell: pwsh
+        run: |
+          ./login.ps1
+          Write-Host "Tailscale IP from GITHUB_ENV: $env:CONNECTION_IP"
+
+      - name: Keep session alive for 6 hours
+        shell: pwsh
+        run: |
+          Write-Host "Keeping Windows RDP session alive for 6 hours..."
+          Start-Sleep -Seconds 21600
