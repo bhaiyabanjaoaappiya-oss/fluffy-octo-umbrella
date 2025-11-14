@@ -1,11 +1,23 @@
-$TSIP = (tailscale ip -4 | Select-Object -First 1)
+# login.ps1
+$tsExe = "C:\Program Files\Tailscale\tailscale.exe"
 
-Write-Host "==============================="
-Write-Host " Windows Remote Info"
-Write-Host "-------------------------------"
-Write-Host " Tailscale IP : $TSIP"
-Write-Host " User         : Sapna"
-Write-Host " Password     : Sapna"
-Write-Host " VNC Pass     : Sapna"
-Write-Host " Port (VNC)   : 5900"
-Write-Host "==============================="
+if (Test-Path $tsExe) {
+    $tsIp = (& $tsExe ip -4 | Select-Object -First 1)
+} else {
+    $tsIp = "<tailscale.exe not found>"
+}
+
+$Username = $env:RDP_USER
+if (-not $Username) { $Username = "Sapna" }
+
+$Password = $env:RDP_PASS
+if (-not $Password) { $Password = "Sapna@12345Love!" }
+
+Write-Host "========================================"
+Write-Host "   Windows RDP via Tailscale — Info"
+Write-Host "========================================"
+Write-Host "  Tailscale IP : $tsIp"
+Write-Host "  RDP User     : $Username"
+Write-Host "  RDP Pass     : $Password"
+Write-Host "  Port         : 3389 (RDP)"
+Write-Host "========================================"
