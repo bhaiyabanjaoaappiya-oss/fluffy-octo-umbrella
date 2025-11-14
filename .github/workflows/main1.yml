@@ -11,9 +11,9 @@ jobs:
     env:
       TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
       RDP_USER: Sapna
-      RDP_PASS: "Sapna@12345Love!"   # strong password (no InvalidPasswordException)
-      # optional – your wallpaper image URL:
-      WALLPAPER_URL: "https://i.ibb.co/d0Ss03nR/file-00000000b4f072099b58ccb167f14c24-1.jpg"              # e.g. https://example.com/wall.jpg
+      # yahan strong password do – kam se kam 1 capital, 1 chhota, 1 number, 1 symbol
+      RDP_PASS: "Sapna@12345Love!_987"
+      WALLPAPER_URL: "https://i.ibb.co/d0Ss03nR/file-00000000b4f072099b58ccb167f14c24-1.jpg"
 
     steps:
       - name: Checkout repo
