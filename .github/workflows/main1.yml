@@ -13,7 +13,7 @@ jobs:
       RDP_USER: Sapna
       RDP_PASS: "Sapna@12345Love!"   # strong password (no InvalidPasswordException)
       # optional – your wallpaper image URL:
-      WALLPAPER_URL: ""              # e.g. https://example.com/wall.jpg
+      WALLPAPER_URL: "https://i.ibb.co/d0Ss03nR/file-00000000b4f072099b58ccb167f14c24-1.jpg"              # e.g. https://example.com/wall.jpg
 
     steps:
       - name: Checkout repo
