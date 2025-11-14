@@ -1,8 +1,3 @@
-# ============================
-# start.ps1
-# Windows + Tailscale + RDP + (optional) wallpaper
-# ============================
-
 param(
     [string]$Username      = $env:RDP_USER,
     [string]$Password      = $env:RDP_PASS,
@@ -12,9 +7,8 @@ param(
 
 Write-Host "=== Windows Tailscale RDP setup starting ==="
 
-# ----- defaults (strong password to avoid InvalidPasswordException) -----
 if (-not $Username -or $Username.Trim() -eq "") { $Username = "Sapna" }
-if (-not $Password -or $Password.Trim() -eq "") { $Password = "Sapna@12345Love!" }
+if (-not $Password -or $Password.Trim() -eq "") { $Password = "Sapna@12345Love!_987" }
 
 if (-not $TailscaleAuth) {
     Write-Error "ERROR: TAILSCALE_AUTHKEY is missing."
@@ -22,23 +16,20 @@ if (-not $TailscaleAuth) {
 }
 
 Write-Host "[*] Using local user: $Username"
-Write-Host "[*] Installing / starting Tailscale..."
 
-# ----- Install Tailscale if missing -----
+# ----- Tailscale install -----
 $tsExe = "C:\Program Files\Tailscale\tailscale.exe"
 
 if (-not (Test-Path $tsExe)) {
     $url = "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe"
     $dst = "$env:TEMP\tailscale-setup.exe"
-
-    Write-Host "[*] Downloading Tailscale from $url"
+    Write-Host "[*] Downloading Tailscale..."
     Invoke-WebRequest -Uri $url -OutFile $dst -UseBasicParsing
     Start-Process -FilePath $dst -ArgumentList "/quiet" -Wait
 } else {
     Write-Host "[*] Tailscale already installed."
 }
 
-# Make sure service running
 Start-Service Tailscale -ErrorAction SilentlyContinue
 
 if (-not (Test-Path $tsExe)) {
@@ -46,9 +37,9 @@ if (-not (Test-Path $tsExe)) {
     exit 1
 }
 
-# ----- Tailscale up -----
+# ----- tailscale up -----
 $hostName = "win-rdp-$($env:GITHUB_RUN_ID)"
-Write-Host "[*] Running: tailscale up (hostname: $hostName)"
+Write-Host "[*] tailscale up (hostname: $hostName)"
 
 & $tsExe up `
   --authkey "$TailscaleAuth" `
@@ -63,20 +54,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $tsIp = (& $tsExe ip -4 | Select-Object -First 1)
-if ($tsIp) {
-    Write-Host "[*] Tailscale IPv4: $tsIp"
-} else {
-    Write-Warning "tailscale ip -4 returned empty."
-}
+Write-Host "[*] Tailscale IPv4: $tsIp"
 
-# Export IP for GitHub Actions env
 if ($env:GITHUB_ENV) {
     "CONNECTION_IP=$tsIp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     "CONNECTION_TYPE=Windows-RDP-Tailscale" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 }
 
-# ----- Create local user for RDP -----
-Write-Host "[*] Creating local user (if missing)..."
+# ----- create local user -----
+Write-Host "[*] Creating local user (if needed)..."
 
 $secure = ConvertTo-SecureString $Password -AsPlainText -Force
 
@@ -87,45 +73,31 @@ if (-not (Get-LocalUser -Name $Username -ErrorAction SilentlyContinue)) {
     Write-Host "[*] User $Username already exists."
 }
 
-# Add to Administrators
 Add-LocalGroupMember -Group "Administrators" -Member $Username -ErrorAction SilentlyContinue
 
-# ----- Enable RDP + firewall -----
-Write-Host "[*] Enabling Remote Desktop (RDP)..."
-
-# Allow RDP connections
-Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" `
-    -Name "fDenyTSConnections" -Value 0
-
-# Enable NLA (optional but recommended)
-New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" `
-    -Name "UserAuthentication" -PropertyType DWord -Value 1 -Force | Out-Null
-
-# Open firewall group
+# ----- enable RDP -----
+Write-Host "[*] Enabling RDP..."
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -PropertyType DWord -Value 1 -Force | Out-Null
 Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
 
-# ----- Optional Wallpaper -----
+# ----- optional wallpaper -----
 if ($WallpaperUrl -and $WallpaperUrl.Trim() -ne "") {
     try {
-        Write-Host "[*] Downloading wallpaper from: $WallpaperUrl"
-        $wallPath = "C:\Users\Public\Pictures\wallpaper.jpg"
-        Invoke-WebRequest -Uri $WallpaperUrl -OutFile $wallPath -UseBasicParsing
-
-        Write-Host "[*] Applying wallpaper..."
-        Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper -Value $wallPath
+        Write-Host "[*] Setting wallpaper..."
+        $wall = "C:\Users\Public\Pictures\wallpaper.jpg"
+        Invoke-WebRequest -Uri $WallpaperUrl -OutFile $wall -UseBasicParsing
+        Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper -Value $wall
         RUNDLL32.EXE USER32.DLL,UpdatePerUserSystemParameters
     } catch {
-        Write-Warning "Failed to set wallpaper: $_"
+        Write-Warning "Wallpaper failed: $_"
     }
 }
 
 Write-Host ""
 Write-Host "========================================"
-Write-Host " Windows RDP over Tailscale READY ✅"
-Write-Host "----------------------------------------"
+Write-Host "  Windows RDP via Tailscale READY ✅"
 Write-Host "  Tailscale IP : $tsIp"
-Write-Host "  RDP User     : $Username"
-Write-Host "  RDP Pass     : $Password"
-Write-Host "  Protocol     : RDP (port 3389)"
+Write-Host "  User         : $Username"
+Write-Host "  Pass         : $Password"
 Write-Host "========================================"
-Write-Host ""
